@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lottery Search System — Visual Companion</title>
+<style>
+  :root {
+    --bg: #f4f5fa;
+    --surface: #ffffff;
+    --surface-2: #ececf4;
+    --border: #d9dce8;
+    --ink: #171a24;
+    --ink-muted: #5a5f74;
+    --ink-faint: #8a8fa3;
+    --accent: #c97a1f;
+    --accent-ink: #8a5313;
+    --accent-soft: #f4e4cc;
+    --state-available: #6b7280;
+    --state-reserved: #c97a1f;
+    --state-sold: #1f8f63;
+    --state-blocked: #c53d33;
+    --focus: #2f5fd6;
+    --radius: 3px;
+    --mono: 'Cascadia Code', 'SF Mono', Consolas, 'Liberation Mono', monospace;
+    --display: 'Bahnschrift', 'Arial Narrow', 'Helvetica Neue Condensed', sans-serif;
+    --body: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161d;
+      --surface: #1c1f2a;
+      --surface-2: #242836;
+      --border: #313648;
+      --ink: #edeef4;
+      --ink-muted: #a3a8bd;
+      --ink-faint: #767c92;
+      --accent: #eaa64c;
+      --accent-ink: #f2b968;
+      --accent-soft: #3a2c14;
+      --state-available: #8b93a8;
+      --state-reserved: #eaa64c;
+      --state-sold: #3fb98b;
+      --state-blocked: #e2635a;
+      --focus: #7ea2ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161d; --surface: #1c1f2a; --surface-2: #242836; --border: #313648;
+    --ink: #edeef4; --ink-muted: #a3a8bd; --ink-faint: #767c92;
+    --accent: #eaa64c; --accent-ink: #f2b968; --accent-soft: #3a2c14;
+    --state-available: #8b93a8; --state-reserved: #eaa64c; --state-sold: #3fb98b; --state-blocked: #e2635a;
+    --focus: #7ea2ff;
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f5fa; --surface: #ffffff; --surface-2: #ececf4; --border: #d9dce8;
+    --ink: #171a24; --ink-muted: #5a5f74; --ink-faint: #8a8fa3;
+    --accent: #c97a1f; --accent-ink: #8a5313; --accent-soft: #f4e4cc;
+    --state-available: #6b7280; --state-reserved: #c97a1f; --state-sold: #1f8f63; --state-blocked: #c53d33;
+    --focus: #2f5fd6;
+  }
+
+  .i18n-en { display: none; }
+  :root[data-lang="en"] .i18n-th { display: none; }
+  :root[data-lang="en"] .i18n-en { display: revert; }
+
+  .lang-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    padding: 3px;
+    gap: 2px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  }
+  .lang-toggle button {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    border: none;
+    background: transparent;
+    color: var(--ink-faint);
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .lang-toggle button.active { background: var(--ink); color: var(--bg); }
+  @media print { .lang-toggle { display: none; } }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-soft); }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .page { max-width: 920px; margin: 0 auto; padding: 0 24px 96px; }
+
+  header.hero {
+    border-bottom: 1px solid var(--border);
+    padding: 48px 0 28px;
+    margin-bottom: 40px;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 22px; height: 1px;
+    background: var(--accent);
+    display: inline-block;
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(2rem, 1.6rem + 1.6vw, 2.9rem);
+    letter-spacing: 0.01em;
+    margin: 14px 0 10px;
+    text-wrap: balance;
+  }
+  .hero p {
+    color: var(--ink-muted);
+    max-width: 62ch;
+    font-size: 1.02rem;
+  }
+  .hero code {
+    font-family: var(--mono);
+    background: var(--surface-2);
+    padding: 1px 6px;
+    border-radius: var(--radius);
+    font-size: 0.9em;
+  }
+
+  /* ---- requirement / problem statement ---- */
+  .overview-text { margin: 0 0 22px; font-size: 0.98rem; color: var(--ink); }
+  .future-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  .future-list li { padding-left: 18px; position: relative; color: var(--ink-muted); }
+  .future-list li::before { content: "\2014"; position: absolute; left: 0; color: var(--accent-ink); }
+  .future-list strong { color: var(--ink); }
+
+  .userb-panel { margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--border); }
+  .userb-head { font-size: 0.9rem; color: var(--ink-muted); margin-bottom: 12px; }
+  .userb-result {
+    display: none;
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    border: 1px solid var(--border);
+  }
+  .userb-result.show { display: block; }
+  .userb-result.success { border-color: var(--state-sold); background: color-mix(in srgb, var(--state-sold) 12%, transparent); color: var(--state-sold); }
+  .userb-result.blocked { border-color: var(--state-blocked); background: color-mix(in srgb, var(--state-blocked) 8%, transparent); color: var(--state-blocked); }
+  .userb-result.gone { background: var(--surface-2); color: var(--ink-faint); }
+  .userb-result.shake { animation: shakeX 0.4s ease; }
+  @keyframes shakeX { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  @media (prefers-reduced-motion: reduce) { .userb-result.shake { animation: none; } }
+  .req-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 22px; }
+  .req-fact .label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    margin-bottom: 6px;
+  }
+  .req-fact .value { font-size: 0.98rem; }
+  .req-fact .value code { font-family: var(--mono); background: var(--surface-2); padding: 1px 6px; border-radius: var(--radius); font-size: 0.9em; }
+
+  .critical-callout {
+    border: 1px solid var(--state-blocked);
+    border-left-width: 4px;
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    background: color-mix(in srgb, var(--state-blocked) 6%, transparent);
+    margin-bottom: 24px;
+  }
+  .callout-label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--state-blocked);
+    margin-bottom: 8px;
+  }
+  .critical-callout p { margin: 0 0 14px; }
+  .callout-example {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .callout-example .pool-num { padding: 4px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+  .callout-example .arrow { color: var(--ink-faint); }
+  .callout-example .who { color: var(--ink-muted); font-family: var(--body); }
+  .callout-example .got { border-color: var(--state-sold); color: var(--state-sold); font-weight: 700; }
+  .callout-example .banned { border-color: var(--state-blocked); color: var(--state-blocked); text-decoration: line-through; }
+
+  .criteria-list { display: grid; gap: 20px; }
+  .criteria-item { display: flex; gap: 14px; align-items: flex-start; }
+  .criteria-item .tag {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    padding: 2px 8px;
+    border-radius: var(--radius);
+    flex-shrink: 0;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .criteria-item .q, .criteria-item .a { margin: 0; }
+  .criteria-item .q { color: var(--ink-muted); }
+  .criteria-item strong { color: var(--ink); }
+  .criteria-item .a {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+    color: var(--ink);
+  }
+  .criteria-item .a .lead { color: var(--state-sold); font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 4px; }
+
+  .mini-flow { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-bottom: 56px; }
+  .mini-flow .stage-pill { font-size: 0.8rem; }
+  .mini-flow .stage-pill em { font-style: normal; opacity: 0.8; }
+  .flow-node { display: flex; flex-direction: column; align-items: center; position: relative; }
+  .flow-node.loop-origin { position: relative; }
+  .loop-arrow {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-72%);
+    width: 160px;
+    height: 44px;
+    color: var(--state-reserved);
+    opacity: 0.75;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .loop-label {
+    position: absolute;
+    top: calc(100% + 40px);
+    left: 50%;
+    transform: translateX(-72%);
+    width: 160px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--ink-faint);
+    white-space: normal;
+  }
+  .mini-flow-note { font-size: 0.82rem; color: var(--ink-faint); margin-top: 8px; }
+
+  .perf-bars { display: grid; gap: 10px; margin-top: 14px; }
+  .perf-row { display: flex; align-items: center; gap: 12px; }
+  .perf-label { width: 150px; flex-shrink: 0; font-size: 0.88rem; color: var(--ink-muted); }
+  .perf-label code { font-family: var(--mono); font-size: 0.85em; }
+  .perf-bar { flex: 1; height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .perf-bar span { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+  .perf-value { width: 56px; flex-shrink: 0; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); font-size: 0.85rem; }
+
+  .demo-divider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 8px 0 40px;
+    color: var(--ink-faint);
+  }
+  .demo-divider::before, .demo-divider::after {
+    content: "";
+    height: 1px;
+    background: var(--border);
+    flex: 1;
+  }
+  .demo-divider span {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+
+  section { margin-bottom: 56px; }
+  .section-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .section-num {
+    font-family: var(--mono);
+    color: var(--accent-ink);
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+  }
+  h2 {
+    font-family: var(--display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  .section-lede { color: var(--ink-muted); max-width: 68ch; margin: 10px 0 24px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+
+  /* ---- ticket digit boxes ---- */
+  .pattern-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .digit-box {
+    width: 44px; height: 54px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.4rem;
+    text-align: center;
+    color: var(--ink);
+  }
+  .digit-box:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .digit-box.wild { color: var(--accent-ink); background: var(--accent-soft); font-weight: 700; }
+
+  .query-out {
+    margin-top: 18px;
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    overflow-x: auto;
+    color: var(--ink-muted);
+  }
+  .query-out .kw { color: var(--accent-ink); font-weight: 700; }
+
+  .ticket-list { margin-top: 20px; display: grid; gap: 8px; }
+  .ticket-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .ticket-row .num { font-size: 1.1rem; letter-spacing: 0.05em; }
+  .ticket-row .verdict { margin-left: auto; font-size: 0.82rem; font-family: var(--body); color: var(--ink-faint); }
+  .ticket-row.match { border-color: var(--accent); background: var(--accent-soft); }
+  .ticket-row.match .verdict { color: var(--accent-ink); font-weight: 600; }
+
+  /* ---- race condition ---- */
+  .race-controls { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+  button.action {
+    font-family: var(--body);
+    font-weight: 600;
+    font-size: 0.92rem;
+    background: var(--ink);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius);
+    padding: 10px 18px;
+    cursor: pointer;
+  }
+  :root[data-theme="dark"] button.action, @media (prefers-color-scheme: dark) { }
+  button.action:hover { background: var(--accent-ink); }
+  button.action:disabled { opacity: 0.5; cursor: default; }
+  .race-note { font-size: 0.85rem; color: var(--ink-faint); }
+
+  .lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 620px) { .lanes { grid-template-columns: 1fr; } }
+  .lane {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    background: var(--surface-2);
+  }
+  .lane h3 { margin: 0 0 12px; font-family: var(--mono); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); }
+  .lane .slot {
+    display: flex; align-items: center; justify-content: center;
+    height: 64px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    font-family: var(--mono);
+    font-size: 1.3rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-faint);
+    transition: all 0.4s ease;
+  }
+  .lane .slot.granted { border-style: solid; border-color: var(--state-sold); background: color-mix(in srgb, var(--state-sold) 14%, transparent); color: var(--state-sold); font-weight: 700; }
+  .lane .slot.skipped { border-style: solid; border-color: var(--state-blocked); color: var(--state-blocked); }
+  .lane .status { margin-top: 10px; font-size: 0.85rem; color: var(--ink-muted); min-height: 1.3em; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lane .slot { transition: none; }
+  }
+
+  /* ---- algorithm table (details/summary) ---- */
+  .algo { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .algo details { border-bottom: 1px solid var(--border); }
+  .algo details:last-child { border-bottom: none; }
+  .algo summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+  }
+  .algo summary::-webkit-details-marker { display: none; }
+  .algo summary::before {
+    content: "+";
+    font-family: var(--mono);
+    color: var(--accent-ink);
+    width: 1em;
+    flex-shrink: 0;
+  }
+  .algo details[open] summary::before { content: "\2212"; }
+  .algo summary .name { font-weight: 700; }
+  .algo summary .verdict-pill {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+  .verdict-pill.chosen { color: var(--state-sold); border-color: var(--state-sold); }
+  .verdict-pill.rejected { color: var(--ink-faint); }
+  .verdict-pill.optional { color: var(--state-reserved); border-color: var(--state-reserved); }
+  .algo-body { padding: 0 18px 20px 50px; color: var(--ink-muted); font-size: 0.94rem; }
+  .mem-bar-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-family: var(--mono); font-size: 0.8rem; }
+  .mem-bar { flex: 1; height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .mem-bar span { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+
+  /* ---- lifecycle ---- */
+  .lifecycle-stage { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+  .stage-pill {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--ink-faint);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .stage-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-faint); }
+  .stage-pill.active { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+  .stage-pill.active .dot { background: var(--state-reserved); }
+  .stage-pill.sold { border-color: var(--state-sold); color: var(--state-sold); background: color-mix(in srgb, var(--state-sold) 12%, transparent); }
+  .stage-pill.sold .dot { background: var(--state-sold); }
+  .stage-arrow { color: var(--ink-faint); align-self: center; }
+
+  .expiry-bar { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; margin: 14px 0; }
+  .expiry-bar span {
+    display: block; height: 100%; background: var(--state-reserved); width: 100%;
+    transform-origin: left;
+  }
+  .expiry-bar span.running { animation: shrink 6s linear forwards; }
+  @keyframes shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+  @media (prefers-reduced-motion: reduce) { .expiry-bar span.running { animation: none; transform: scaleX(0.4); } }
+
+  .lifecycle-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .lifecycle-note { font-size: 0.82rem; color: var(--ink-faint); margin-top: 12px; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 22px;
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+  }
+  footer code { font-family: var(--mono); }
+</style>
+</head>
+<body>
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" id="langThBtn" class="active">TH</button>
+  <button type="button" id="langEnBtn">EN</button>
+</div>
+<div class="page">
+
+  <header class="hero">
+    <div class="eyebrow">Backend Challenge &middot; Section 2</div>
+    <h1>Lottery Search System</h1>
+  </header>
+
+  <section id="requirement">
+    <div class="section-head"><span class="section-num">01</span><h2><span class="i18n-th">โจทย์ &amp; คำตอบ</span><span class="i18n-en">Requirement &amp; Answer</span></h2></div>
+    <div class="card">
+      <p class="overview-text">
+        <span class="i18n-th">ระบบค้นหา + จอง ticket จากที่สร้างไว้ล่วงหน้า 1 ล้านใบ user ค้นด้วย pattern 6 หลักที่มี wildcard แล้วได้ ticket ที่ตรงและยังไม่มีใครจองไป 1 ใบ โจทย์จริงๆ ไม่ใช่แค่ "หาให้เจอ" แต่คือการันตีว่าสองคนที่ค้น pattern เดียวกันพร้อมกัน จะไม่มีวันได้ ticket ใบเดียวกันเด็ดขาด</span>
+        <span class="i18n-en">A search-and-reserve system over 1,000,000 pre-generated tickets. A user searches with a 6-digit wildcard pattern and gets back one matching, unallocated ticket. The real challenge isn't just "finding a match" - it's guaranteeing that two users searching the same pattern at the same instant can never receive the same ticket.</span>
+      </p>
+      <div class="req-facts">
+        <div class="req-fact"><span class="label">Dataset</span><span class="value"><span class="i18n-th">ticket 1,000,000 ใบ ตั้งแต่</span><span class="i18n-en">1,000,000 tickets, from</span> <code>000000</code> <span class="i18n-th">ถึง</span><span class="i18n-en">to</span> <code>999999</code> <span class="i18n-th">(6 หลัก)</span><span class="i18n-en">(6 digits)</span></span></div>
+        <div class="req-fact"><span class="label">Search</span><span class="value"><span class="i18n-th">ค้นแบบ wildcard เช่น</span><span class="i18n-en">Wildcard search, e.g.</span> <code>****23</code>, <code>1****5</code>, <code>123***</code></span></div>
+      </div>
+
+      <div class="critical-callout">
+        <div class="callout-label"><span class="i18n-th">Requirement ที่สำคัญที่สุด</span><span class="i18n-en">The most important requirement</span></div>
+        <p><span class="i18n-th">คนสองคนค้น pattern เดียวกันพร้อมกัน ห้ามได้ ticket ใบเดียวกันเด็ดขาด</span><span class="i18n-en">Two users searching the same pattern at the same instant must never receive the same ticket.</span></p>
+        <div class="callout-example">
+          <span class="who"><span class="i18n-th">Pool ที่ match</span><span class="i18n-en">Pool matching</span> <code>123***</code>:</span>
+          <span class="pool-num">123456</span><span class="pool-num">123789</span><span class="pool-num">123999</span>
+        </div>
+        <div class="callout-example" style="margin-top:10px">
+          <span class="who"><span class="i18n-th">User A ค้น 123*** →</span><span class="i18n-en">User A searches 123*** →</span></span><span class="pool-num got">123456</span>
+          <span class="arrow">·</span>
+          <span class="who"><span class="i18n-th">User B ค้น 123*** (เวลาเดียวกัน) →</span><span class="i18n-en">User B searches 123*** (same instant) →</span></span><span class="pool-num banned">123456</span>
+          <span class="arrow i18n-th">→ ได้</span><span class="arrow i18n-en">→ gets</span><span class="pool-num got">123789</span><span class="who i18n-th">แทน</span><span class="who i18n-en">instead</span>
+        </div>
+      </div>
+
+      <div class="criteria-list">
+        <div class="criteria-item">
+          <span class="tag">Database</span>
+          <div>
+            <p class="q">
+              <span class="i18n-th"><strong>เลือก DB อะไร</strong> — PostgreSQL / Mongo / Redis / Elastic / ClickHouse แล้วอธิบายเหตุผล</span>
+              <span class="i18n-en"><strong>Which database?</strong> - PostgreSQL / Mongo / Redis / Elastic / ClickHouse, and explain why.</span>
+            </p>
+            <p class="a"><span class="lead i18n-th">คำตอบ</span><span class="lead i18n-en">Answer</span>
+              <span class="i18n-th"><strong>PostgreSQL</strong> — <code>SELECT ... FOR UPDATE SKIP LOCKED</code> แก้ concurrency ได้ตรงจุดโดยไม่ต้องมี distributed lock แยก, generated column + B-tree รองรับ wildcard ได้เร็ว</span>
+              <span class="i18n-en"><strong>PostgreSQL</strong> - <code>SELECT ... FOR UPDATE SKIP LOCKED</code> solves the concurrency problem directly without a separate distributed lock; generated columns + B-tree indexes make wildcard matching fast.</span>
+            </p>
+          </div>
+        </div>
+        <div class="criteria-item">
+          <span class="tag">Algorithm</span>
+          <div>
+            <p class="q">
+              <span class="i18n-th"><strong>Wildcard search หาอย่างไร</strong> — Prefix Index, Trie, Bitmap, Inverted Index, B-tree, Hash (ไม่ใช่แค่ <code>LIKE '%23'</code> เพราะข้อมูล 1 ล้านแถว)</span>
+              <span class="i18n-en"><strong>How do you search wildcards?</strong> - Prefix Index, Trie, Bitmap, Inverted Index, B-tree, Hash (not just <code>LIKE '%23'</code>, given 1M rows).</span>
+            </p>
+            <p class="a"><span class="lead i18n-th">คำตอบ</span><span class="lead i18n-en">Answer</span>
+              <span class="i18n-th">แยกเก็บตัวเลขแต่ละหลักของ ticket เป็นคอลัมน์ของตัวเอง (<code>d0..d5</code>) แล้วสร้าง <strong>index</strong> ให้ทุกคอลัมน์ เวลาค้นด้วย pattern ที่มีบางหลักระบุตัวเลขจริง Postgres จะเลือกใช้ index ของหลักนั้นให้เองโดยอัตโนมัติ ทำให้หาเร็วโดยไม่ต้องสร้างโครงสร้างข้อมูลพิเศษเพิ่มเติม</span>
+              <span class="i18n-en">Store each digit of the ticket in its own column (<code>d0..d5</code>) and put an <strong>index</strong> on every column. When a pattern fixes some digit, Postgres automatically picks that digit's index, making the search fast without building any extra data structure.</span>
+            </p>
+          </div>
+        </div>
+        <div class="criteria-item">
+          <span class="tag">Concurrency</span>
+          <div>
+            <p class="q">
+              <span class="i18n-th"><strong>กัน race condition อย่างไร</strong> — <code>SELECT ... FOR UPDATE SKIP LOCKED</code>, Redis Lock, หรือ Reservation (available → reserved → sold แบบ atomic)</span>
+              <span class="i18n-en"><strong>How do you prevent the race condition?</strong> - <code>SELECT ... FOR UPDATE SKIP LOCKED</code>, a Redis lock, or a Reservation (available → reserved → sold, atomically).</span>
+            </p>
+            <p class="a"><span class="lead i18n-th">คำตอบ</span><span class="lead i18n-en">Answer</span>
+              <span class="i18n-th"><code>SELECT ... FOR UPDATE SKIP LOCKED</code> ในหนึ่ง transaction ล็อก ticket ทันทีตอนค้นเจอ กันสองคนได้ใบเดียวกัน แล้วผูกกับ <strong>reservation lifecycle</strong> ด้านล่างเพื่อไม่ให้ ticket หายจาก pool ถ้าค้นแล้วไม่ซื้อ</span>
+              <span class="i18n-en"><code>SELECT ... FOR UPDATE SKIP LOCKED</code> in one transaction locks the ticket the instant it's found, preventing two users from getting the same one. It's paired with the <strong>reservation lifecycle</strong> below so a ticket doesn't disappear from the pool if someone searches but never buys.</span>
+            </p>
+            <div class="mini-flow">
+              <div class="flow-node">
+                <span class="stage-pill">available</span>
+              </div>
+              <span class="stage-arrow">→</span>
+              <div class="flow-node loop-origin">
+                <span class="stage-pill active">reserved <em class="i18n-th">(5 นาที)</em><em class="i18n-en">(5 min)</em></span>
+                <svg class="loop-arrow" viewBox="0 0 160 44" aria-hidden="true">
+                  <defs>
+                    <marker id="loopArrowHead" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto">
+                      <path d="M0,0 L7,3.5 L0,7 Z" fill="currentColor" />
+                    </marker>
+                  </defs>
+                  <path d="M150,4 C110,38 50,38 8,4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 4" marker-end="url(#loopArrowHead)" />
+                </svg>
+                <span class="loop-label i18n-th">หมดเวลา 5 นาที ยังไม่ซื้อ</span>
+                <span class="loop-label i18n-en">5 min pass, still not bought</span>
+              </div>
+              <span class="stage-arrow">→</span>
+              <div class="flow-node">
+                <span class="stage-pill sold">sold</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="criteria-item">
+          <span class="tag">Performance</span>
+          <div>
+            <p class="q">
+              <span class="i18n-th"><strong>วิเคราะห์ trade-off</strong> — search complexity, index, memory (เช่น Trie เร็วมากแต่ใช้ RAM เยอะ)</span>
+              <span class="i18n-en"><strong>Analyze the trade-offs</strong> - search complexity, index, memory (e.g. a Trie is very fast but uses a lot of RAM).</span>
+            </p>
+            <p class="a"><span class="lead i18n-th">คำตอบ</span><span class="lead i18n-en">Answer</span>
+              <span class="i18n-th">ยิ่งรู้ตัวเลขในหลักไหนแน่นอนมากเท่าไหร่ ก็ยิ่งค้นเจอเร็วขึ้น เพราะ Postgres ใช้ index ของหลักนั้นตัดตัวเลือกทิ้งได้ทันที ส่วน pattern ที่เป็น <code>*</code> ล้วน (ไม่รู้เลยสักหลัก) ต้องไล่เช็คทุกแถว แต่ก็ยังเร็วพอเพราะข้อมูลมีแค่ 1 ล้านแถว</span>
+              <span class="i18n-en">The more digits you know for certain, the faster the search - Postgres uses that digit's index to rule out candidates instantly. A pattern that's all <code>*</code> (no digit known at all) has to check every row, but that's still fast enough since there's only 1M rows.</span>
+            </p>
+            <div class="perf-bars">
+              <div class="perf-row"><span class="perf-label i18n-th">รู้ 2 หลักขึ้นไป</span><span class="perf-label i18n-en">Know 2+ digits</span><div class="perf-bar"><span style="width:15%"></span></div><span class="perf-value i18n-th">เร็วสุด</span><span class="perf-value i18n-en">Fastest</span></div>
+              <div class="perf-row"><span class="perf-label i18n-th">รู้ 1 หลัก</span><span class="perf-label i18n-en">Know 1 digit</span><div class="perf-bar"><span style="width:45%"></span></div><span class="perf-value i18n-th">เร็ว</span><span class="perf-value i18n-en">Fast</span></div>
+              <div class="perf-row"><span class="perf-label i18n-th">ไม่รู้เลย (<code>******</code>)</span><span class="perf-label i18n-en">Know nothing (<code>******</code>)</span><div class="perf-bar"><span style="width:100%"></span></div><span class="perf-value i18n-th">ช้าสุด (แต่ยังไหว)</span><span class="perf-value i18n-en">Slowest (still fine)</span></div>
+            </div>
+            <p class="a" style="margin-top:12px">
+              <span class="i18n-th">เลือกใช้ <strong>B-tree index</strong> เพราะเร็วพอสำหรับทุกกรณีข้างบน และกินความจำน้อย ไม่ต้องเก็บโครงสร้างข้อมูลพิเศษไว้ใน RAM ตลอดเวลา</span>
+              <span class="i18n-en">Chose <strong>B-tree indexes</strong> because they're fast enough for every case above and use little memory - no need to keep a special structure resident in RAM at all times.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="future-improvements">
+    <div class="section-head"><span class="section-num">02</span><h2>Future Improvements</h2></div>
+    <p class="section-lede">
+      <span class="i18n-th">แนวทางขยับต่อถ้าระบบโตขึ้นหรือมี traffic จริงมาวัดผล — ยังไม่ต้องทำตอนนี้</span>
+      <span class="i18n-en">Directions to move toward if the system grows or real traffic data comes in - not needed right now.</span>
+    </p>
+    <div class="card">
+      <ul class="future-list">
+        <li>
+          <span class="i18n-th"><strong>แยกเครื่อง Server รับเฉพาะการค้นหา</strong> — เพิ่มเครื่อง database สำรองที่คอยก็อปปี้ข้อมูลจากเครื่องหลักตลอดเวลา แล้วให้การค้นหาที่ยังไม่ถึงขั้นจอง ไปถามเครื่องสำรองนี้แทน ส่วนเครื่องหลักรับหน้าที่แค่ตอนต้อง "จองจริง" เท่านั้น เพราะในระบบจริงจำนวนคนค้นหาจะเยอะกว่าคนที่กดจองมาก การแยกแบบนี้ช่วยให้รองรับคนค้นหาพร้อมกันได้มากขึ้น โดยไม่ไปแย่งทรัพยากรกับเครื่องหลักที่ต้องดูแลเรื่องจองและ lock ส่วนข้อมูลที่เปลี่ยน (เช่น ticket ถูกจองไปแล้ว) จะไหลกลับจากเครื่องหลักไปอัปเดตเครื่องสำรองให้อัตโนมัติผ่าน replication ของ PostgreSQL เอง ไม่ต้องเขียนโค้ด sync เอง แต่จะมี delay สั้นๆ ระดับมิลลิวินาที</span>
+          <span class="i18n-en"><strong>Split off a read-only search server</strong> - add a standby database that continuously copies data from the primary, and route searches that haven't reached the reservation step to it instead. The primary only handles the actual "reserve" step, since real traffic has far more searches than reservations. This lets the system handle more concurrent searches without competing with the primary, which is busy with reservations and locks. Changed data (e.g. a ticket just reserved) flows back to the standby automatically via PostgreSQL's own replication - no sync code to write - though there's a short, millisecond-scale delay.</span>
+        </li>
+        <li>
+          <span class="i18n-th"><strong>แบ่งข้อมูลเป็นก้อนตามเลขหลักแรก</strong> — ถ้าจำนวน ticket โตขึ้นมากๆ (เกิน 10 ล้านใบ) แบ่งข้อมูลออกเป็น 10 ก้อนตามเลขหลักแรกของ ticket ช่วยให้แต่ละก้อนมีขนาดเล็กลงและกระจายโหลดได้ pattern ที่ไม่ได้ระบุเลขหลักแรก เช่น <code>****23</code> ต้องกระจายไปถามทุกก้อนแล้วรวมผลลัพธ์เอง ซึ่งช้ากว่าการค้นในก้อนเดียว เหมาะทำตอนข้อมูลโตจริงจนเครื่องเดียวรับไม่ไหวเท่านั้น</span>
+          <span class="i18n-en"><strong>Shard data by leading digit</strong> - if the ticket count grows a lot (past ~10M), split the data into 10 shards by the ticket's first digit, keeping each shard smaller and spreading the load. A pattern that doesn't fix the leading digit, like <code>****23</code>, has to fan out to every shard and merge the results, which is slower than a single-shard query - worth doing only once one machine genuinely can't keep up.</span>
+        </li>
+        <li>
+          <span class="i18n-th"><strong>เก็บสถิติก่อนตัดสินใจเพิ่ม cache</strong> — ดูว่าคนค้นหาแบบไม่รู้เลขเลยสักหลักเกิดขึ้นบ่อยแค่ไหนจริงๆ ถ้าน้อยตามคาดไม่ต้องทำอะไรเพิ่ม ถ้าบ่อยค่อยสร้างระบบ cache ช่วยตามที่พูดถึงใน section performance</span>
+          <span class="i18n-en"><strong>Measure before adding a cache</strong> - track how often fully-wildcard searches actually happen in production. If rare as expected, no action needed; if common, build the pre-warming cache mentioned in the Performance section instead.</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="demo-divider">
+    <span class="i18n-th">ต่อจากนี้ — ลองเล่นแบบ Interactive</span>
+    <span class="i18n-en">From here on - try it interactively</span>
+  </div>
+
+  <section id="pattern-demo">
+    <div class="section-head"><span class="section-num">03</span><h2>Wildcard Pattern Matching</h2></div>
+    <p class="section-lede">
+      <span class="i18n-th">แก้ตัวเลขหรือ <code>*</code> ในแต่ละช่องด้านล่าง แล้วดู WHERE clause กับผลลัพธ์ที่ match เปลี่ยนแบบ real-time</span>
+      <span class="i18n-en">Edit the digit or <code>*</code> in each box below and watch the WHERE clause and matching results update in real time.</span>
+    </p>
+    <div class="card">
+      <div class="pattern-row" id="patternRow"></div>
+      <div class="query-out" id="queryOut"></div>
+      <div class="ticket-list" id="ticketList"></div>
+    </div>
+  </section>
+
+  <section id="race-condition">
+    <div class="section-head"><span class="section-num">04</span><h2>Preventing Duplicate Allocation</h2></div>
+    <p class="section-lede">
+      <span class="i18n-th">Requirement ที่สำคัญที่สุด: User A และ User B ค้น pattern เดียวกัน (<code>123***</code>) พร้อมกัน ต้องไม่ได้ ticket ใบเดียวกันเด็ดขาด กดปุ่มด้านล่างเพื่อจำลอง <code>SELECT ... FOR UPDATE SKIP LOCKED</code></span>
+      <span class="i18n-en">The most important requirement: User A and User B search the same pattern (<code>123***</code>) at the same instant and must never get the same ticket. Click the button below to simulate <code>SELECT ... FOR UPDATE SKIP LOCKED</code>.</span>
+    </p>
+    <div class="card">
+      <div class="race-controls">
+        <button class="action" id="raceBtn">Simulate concurrent search</button>
+        <span class="race-note" id="raceNote">
+          <span class="i18n-th">candidates ที่ตรง pattern: 123456, 123789, 123999</span>
+          <span class="i18n-en">candidates matching the pattern: 123456, 123789, 123999</span>
+        </span>
+      </div>
+      <div class="lanes">
+        <div class="lane">
+          <h3>User A</h3>
+          <div class="slot" id="slotA"><span class="i18n-th">รอค้นหา…</span><span class="i18n-en">Waiting to search…</span></div>
+          <div class="status" id="statusA"></div>
+        </div>
+        <div class="lane">
+          <h3>User B</h3>
+          <div class="slot" id="slotB"><span class="i18n-th">รอค้นหา…</span><span class="i18n-en">Waiting to search…</span></div>
+          <div class="status" id="statusB"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="lifecycle">
+    <div class="section-head"><span class="section-num">05</span><h2>Ticket Lifecycle</h2></div>
+    <p class="section-lede">
+      <span class="i18n-th">ticket ไม่ได้ถูก mark ว่า allocated ถาวรตอน search — มี state คั่นกลางเพื่อกัน ticket หายจาก pool ถ้า user ค้นแล้วไม่ซื้อ</span>
+      <span class="i18n-en">A ticket isn't marked allocated permanently at search time - there's an in-between state so it doesn't disappear from the pool if a user searches but never buys.</span>
+    </p>
+    <div class="card">
+      <div class="lifecycle-stage" id="lifecycleStage"></div>
+      <div class="expiry-bar" id="expiryBar" style="display:none"><span></span></div>
+      <div class="lifecycle-actions" id="lifecycleActions"></div>
+      <div class="lifecycle-note">
+        <span class="i18n-th">Demo นี้ย่อเวลา reservation จาก 5 นาทีจริง เหลือ 6 วินาที เพื่อให้เห็น expiry แบบ real-time</span>
+        <span class="i18n-en">This demo compresses the real 5-minute reservation window down to 6 seconds so you can see expiry happen in real time.</span>
+      </div>
+
+      <div class="userb-panel">
+        <div class="userb-head">
+          <span class="i18n-th">สมมติในเวลาเดียวกันนี้ <strong>User B</strong> ค้นหา pattern เดียวกัน แล้วระบบเจอ ticket ใบนี้พอดี — จะเกิดอะไรขึ้น?</span>
+          <span class="i18n-en">Suppose, at this same instant, <strong>User B</strong> searches the same pattern and the system finds this exact ticket - what happens?</span>
+        </div>
+        <button class="action" id="userBBtn"><span class="i18n-th">จำลอง User B ลองจองใบนี้</span><span class="i18n-en">Simulate User B trying to reserve this</span></button>
+        <div class="userb-result" id="userBResult"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span class="i18n-th">เอกสารหลัก: <code>LOTTERY_DESIGN.md</code> (design doc, ไม่มี coding ตาม requirement) — หน้านี้เป็นส่วนเสริมเพื่อให้อ่านง่ายขึ้นเท่านั้น</span>
+    <span class="i18n-en">Primary document: <code>LOTTERY_DESIGN.md</code> (design doc, no code per the requirement) - this page is a supplementary companion for readability only.</span>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- 0. Language toggle ---------- */
+  var currentLang = "th";
+  var langThBtn = document.getElementById("langThBtn");
+  var langEnBtn = document.getElementById("langEnBtn");
+  function setLang(lang) {
+    currentLang = lang;
+    document.documentElement.setAttribute("data-lang", lang);
+    langThBtn.classList.toggle("active", lang === "th");
+    langEnBtn.classList.toggle("active", lang === "en");
+  }
+  langThBtn.addEventListener("click", function () { setLang("th"); });
+  langEnBtn.addEventListener("click", function () { setLang("en"); });
+
+  /* ---------- 1. Pattern matching demo ---------- */
+  var TICKETS = ["123456", "123789", "123999", "998823", "997723", "555523", "444423"];
+  var pattern = ["1", "2", "3", "*", "*", "*"];
+
+  var patternRow = document.getElementById("patternRow");
+  var queryOut = document.getElementById("queryOut");
+  var ticketList = document.getElementById("ticketList");
+
+  function buildDigitBoxes() {
+    patternRow.innerHTML = "";
+    pattern.forEach(function (ch, i) {
+      var input = document.createElement("input");
+      input.type = "text";
+      input.maxLength = 1;
+      input.value = ch;
+      input.className = "digit-box" + (ch === "*" ? " wild" : "");
+      input.setAttribute("aria-label", "digit position " + (i + 1));
+      input.setAttribute("inputmode", "text");
+      input.addEventListener("input", function (e) {
+        var v = e.target.value;
+        if (v === "" ) { pattern[i] = "*"; }
+        else if (/[0-9*]/.test(v)) { pattern[i] = v; }
+        else { e.target.value = pattern[i]; return; }
+        buildDigitBoxes();
+        render();
+        var boxes = patternRow.querySelectorAll(".digit-box");
+        if (boxes[i + 1] && v !== "") { boxes[i + 1].focus(); boxes[i + 1].select(); }
+      });
+      patternRow.appendChild(input);
+    });
+  }
+
+  function render() {
+    var conditions = [];
+    pattern.forEach(function (ch, i) {
+      if (ch !== "*") conditions.push('d' + i + "='" + ch + "'");
+    });
+    conditions.push("NOT allocated");
+    queryOut.innerHTML =
+      '<span class="kw">SELECT</span> id, number <span class="kw">FROM</span> tickets<br><span class="kw">WHERE</span> ' +
+      conditions.join(" <span class=\"kw\">AND</span> ") +
+      ' <span class="kw">LIMIT</span> 1;';
+
+    ticketList.innerHTML = "";
+    TICKETS.forEach(function (num) {
+      var isMatch = pattern.every(function (ch, i) { return ch === "*" || ch === num[i]; });
+      var row = document.createElement("div");
+      row.className = "ticket-row" + (isMatch ? " match" : "");
+      row.innerHTML = '<span class="num">' + num + '</span><span class="verdict">' + (isMatch ? "match" : "no match") + '</span>';
+      ticketList.appendChild(row);
+    });
+  }
+
+  buildDigitBoxes();
+  render();
+
+  /* ---------- 2. Race condition simulation ---------- */
+  var raceBtn = document.getElementById("raceBtn");
+  var slotA = document.getElementById("slotA");
+  var slotB = document.getElementById("slotB");
+  var statusA = document.getElementById("statusA");
+  var statusB = document.getElementById("statusB");
+  var candidates = ["123456", "123789", "123999"];
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  raceBtn.addEventListener("click", function () {
+    raceBtn.disabled = true;
+    slotA.className = "slot"; slotB.className = "slot";
+    slotA.textContent = "…"; slotB.textContent = "…";
+    statusA.textContent = "BEGIN; SELECT ... FOR UPDATE SKIP LOCKED"; statusB.textContent = "BEGIN; SELECT ... FOR UPDATE SKIP LOCKED";
+
+    var delay = reduceMotion ? 0 : 650;
+    setTimeout(function () {
+      slotA.textContent = candidates[0];
+      slotA.classList.add("granted");
+      statusA.textContent = "locks " + candidates[0] + " -> allocated = TRUE -> COMMIT";
+    }, delay);
+
+    setTimeout(function () {
+      statusB.textContent = candidates[0] + " is locked -> SKIP LOCKED";
+      slotB.textContent = candidates[0];
+      slotB.classList.add("skipped");
+    }, delay * 1.4);
+
+    setTimeout(function () {
+      slotB.classList.remove("skipped");
+      slotB.textContent = candidates[1];
+      slotB.classList.add("granted");
+      statusB.textContent = "picks next available: " + candidates[1] + " -> allocated = TRUE -> COMMIT";
+      raceBtn.disabled = false;
+    }, delay * 2.2);
+  });
+
+  /* ---------- 3. Ticket lifecycle ---------- */
+  var STAGES = ["available", "reserved", "sold"];
+  var stageIdx = 0;
+  var stageEl = document.getElementById("lifecycleStage");
+  var actionsEl = document.getElementById("lifecycleActions");
+  var expiryBar = document.getElementById("expiryBar");
+  var expiryTimer = null;
+
+  function renderStages() {
+    stageEl.innerHTML = "";
+    STAGES.forEach(function (s, i) {
+      var pill = document.createElement("span");
+      pill.className = "stage-pill" + (i === stageIdx ? (s === "sold" ? " sold" : " active") : "");
+      pill.innerHTML = '<span class="dot"></span>' + s;
+      stageEl.appendChild(pill);
+      if (i < STAGES.length - 1) {
+        var arrow = document.createElement("span");
+        arrow.className = "stage-arrow";
+        arrow.textContent = "→";
+        stageEl.appendChild(arrow);
+      }
+    });
+  }
+
+  function renderActions() {
+    actionsEl.innerHTML = "";
+    if (STAGES[stageIdx] === "available") {
+      addAction("Reserve (5 min)", function () {
+        stageIdx = 1;
+        renderStages(); renderActions();
+        startExpiry();
+      });
+    } else if (STAGES[stageIdx] === "reserved") {
+      addAction("Confirm purchase", function () {
+        clearExpiry();
+        stageIdx = 2;
+        renderStages(); renderActions();
+      });
+      addAction("Let it expire now", function () {
+        clearExpiry();
+        stageIdx = 0;
+        renderStages(); renderActions();
+      });
+    } else {
+      addAction("Reset demo", function () {
+        stageIdx = 0;
+        renderStages(); renderActions();
+      });
+    }
+  }
+
+  function addAction(label, fn) {
+    var btn = document.createElement("button");
+    btn.className = "action";
+    btn.textContent = label;
+    btn.addEventListener("click", fn);
+    actionsEl.appendChild(btn);
+  }
+
+  function startExpiry() {
+    expiryBar.style.display = "block";
+    var span = expiryBar.querySelector("span");
+    span.className = "";
+    void span.offsetWidth;
+    span.className = "running";
+    clearTimeout(expiryTimer);
+    expiryTimer = setTimeout(function () {
+      if (STAGES[stageIdx] === "reserved") {
+        stageIdx = 0;
+        renderStages(); renderActions();
+        expiryBar.style.display = "none";
+      }
+    }, reduceMotion ? 100 : 6000);
+  }
+
+  function clearExpiry() {
+    clearTimeout(expiryTimer);
+    expiryBar.style.display = "none";
+  }
+
+  var userBBtn = document.getElementById("userBBtn");
+  var userBResult = document.getElementById("userBResult");
+  var USERB_MSG = {
+    available: {
+      th: "ticket ใบนี้ยังว่างอยู่ - User B ได้ไปเลย (กลายเป็นคนที่ reserve มันแทน)",
+      en: "This ticket is still available - User B gets it right away (becomes the one who reserves it instead)."
+    },
+    reserved: {
+      th: "ติดล็อกอยู่กับ User A (คุณ) - SELECT ... FOR UPDATE SKIP LOCKED ทำให้ User B ข้ามใบนี้ไปเจอใบถัดไปแทน ไม่มีทางได้ใบเดียวกันแน่นอน",
+      en: "Locked by User A (you) - SELECT ... FOR UPDATE SKIP LOCKED makes User B skip this row and land on the next available ticket instead. They can never get the same one."
+    },
+    sold: {
+      th: "ใบนี้ขายไปแล้ว - User B ไม่เจอในผลค้นหาอีกต่อไป ต้องได้ใบอื่นจาก pool",
+      en: "Already sold - this ticket no longer shows up in search results. User B has to get a different one from the pool."
+    }
+  };
+  userBBtn.addEventListener("click", function () {
+    userBResult.className = "userb-result show";
+    if (STAGES[stageIdx] === "available") {
+      userBResult.classList.add("success");
+      userBResult.textContent = USERB_MSG.available[currentLang];
+    } else if (STAGES[stageIdx] === "reserved") {
+      userBResult.classList.add("blocked", "shake");
+      userBResult.textContent = USERB_MSG.reserved[currentLang];
+    } else {
+      userBResult.classList.add("gone");
+      userBResult.textContent = USERB_MSG.sold[currentLang];
+    }
+  });
+
+  renderStages();
+  renderActions();
+})();
+</script>
+</body>
+</html>
